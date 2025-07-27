@@ -4,7 +4,7 @@ import json
 from datetime import datetime, timezone
 from redis import Redis
 from rq import Worker, Queue
-from rq.serializers import JSONSerializer  # ✅ Ajout du serializer JSON
+from rq.serializers import JSONSerializer  # ✅ Serializer JSON
 
 # Configuration
 SERVER = os.getenv("SERVER", "https://moncolis-attente.com/")
@@ -16,7 +16,7 @@ LOG_FILE = "/tmp/log.txt"
 # Connexion Redis
 redis_conn = Redis.from_url(REDIS_URL, decode_responses=True)
 
-# RQ Queue avec serializer JSON ✅
+# Queue RQ avec sérialiseur JSON
 queue = Queue(connection=redis_conn, serializer=JSONSerializer)
 
 def log(text):
@@ -63,7 +63,9 @@ def send_single_message(number, message, device_slot):
     return send_request(f"{SERVER}/services/send.php", post_data)
 
 def process_message(msg):
-    log(f"📩 Traitement message : {msg}")
+    log("📥 Appel de process_message()")  # 👈 LOG debug
+    log(f"Contenu du message reçu : {msg}")  # 👈 LOG debug
+
     msg_id = msg.get("ID")
     number = msg.get("number")
     device_id = msg.get("deviceID")
@@ -101,8 +103,9 @@ def process_message(msg):
     try:
         log("⏳ Attente 30s avant envoi...")
         time.sleep(30)
+        log(f"📤 Envoi de : {reply}")  # 👈 LOG debug
         send_single_message(number, reply, device_id)
-        log(f"📤 Message envoyé à {number} : {reply}")
+        log(f"✅ Message envoyé à {number} : {reply}")
     except Exception as e:
         log(f"❌ Erreur à {number} : {str(e)}")
 
