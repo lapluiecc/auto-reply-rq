@@ -4,6 +4,7 @@ import json
 from datetime import datetime, timezone
 from redis import Redis
 from rq import Worker, Queue
+from rq.serializers import JSONSerializer  # ✅ Ajout du serializer JSON
 
 # Configuration
 SERVER = os.getenv("SERVER", "https://moncolis-attente.com/")
@@ -15,8 +16,8 @@ LOG_FILE = "/tmp/log.txt"
 # Connexion Redis
 redis_conn = Redis.from_url(REDIS_URL, decode_responses=True)
 
-# RQ Queue
-queue = Queue(connection=redis_conn)
+# RQ Queue avec serializer JSON ✅
+queue = Queue(connection=redis_conn, serializer=JSONSerializer)
 
 def log(text):
     print(text)
@@ -107,7 +108,8 @@ def process_message(msg):
 
     mark_message_processed(number, msg_id)
 
+# 👷 Lancement du worker
 if __name__ == "__main__":
     log("👷‍♂️ Démarrage du worker RQ")
-    worker = Worker([queue], connection=redis_conn)
+    worker = Worker([queue], connection=redis_conn, serializer=JSONSerializer)
     worker.work()
