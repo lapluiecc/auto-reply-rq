@@ -7,24 +7,20 @@ from flask import Flask, request, Response
 from datetime import datetime
 from redis import Redis
 from rq import Queue
-from rq.serializers import JSONSerializer  # ✅ Ajout du serializer
-from worker import process_message
+from rq.serializers import JSONSerializer
+from tasks import process_message  # ✅ Import depuis tasks.py
 
 API_KEY = os.getenv("API_KEY", "f376d32d14b058ed2383b97fd568d1b26de1b75c")
 DEBUG_MODE = os.getenv("DEBUG_MODE", "false").lower() == "true"
-print(f"[INFO] DEBUG_MODE = {DEBUG_MODE}")  # Pour vérifier dans les logs
-
 LOG_FILE = "/tmp/log.txt"
 
 app = Flask(__name__)
 
-# Connexion Redis via URL Upstash
 redis_conn = Redis.from_url(
     "rediss://default:AV93AAIjcDFiMmYxMTY4MjI4NzE0MTVhOWRhZDY1YTk2YTVkMjlmNHAxMA@flexible-eft-24439.upstash.io:6379",
     decode_responses=True
 )
 
-# ✅ Queue avec JSONSerializer pour être cohérent avec le worker
 q = Queue(connection=redis_conn, serializer=JSONSerializer)
 
 def log(text):
@@ -66,8 +62,7 @@ def read_logs():
     if not os.path.exists(LOG_FILE):
         return Response("Aucun log trouvé", mimetype='text/plain')
     with open(LOG_FILE, 'r', encoding='utf-8') as f:
-        content = f.read()
-    return Response(content, mimetype='text/plain')
+        return Response(f.read(), mimetype='text/plain')
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
