@@ -9,7 +9,7 @@ from redis import Redis
 from rq import Queue
 from worker import process_message
 
-API_KEY = os.getenv("API_KEY", "TONAPIGTW")
+API_KEY = os.getenv("API_KEY", "f376d32d14b058ed2383b97fd568d1b26de1b75c")
 DEBUG_MODE = os.getenv("DEBUG_MODE", "False") == "True"
 LOG_FILE = "/tmp/log.txt"
 
