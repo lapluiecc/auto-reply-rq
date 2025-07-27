@@ -16,7 +16,13 @@ print(f"[INFO] DEBUG_MODE = {DEBUG_MODE}")  # Pour vérifier dans les logs
 LOG_FILE = "/tmp/log.txt"
 
 app = Flask(__name__)
-redis_conn = Redis()
+
+# Connexion Redis via URL Upstash
+redis_conn = Redis.from_url(
+    "rediss://default:AV93AAIjcDFiMmYxMTY4MjI4NzE0MTVhOWRhZDY1YTk2YTVkMjlmNHAxMA@flexible-eft-24439.upstash.io:6379",
+    decode_responses=True
+)
+
 q = Queue(connection=redis_conn)
 
 def log(text):
