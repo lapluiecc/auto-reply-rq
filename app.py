@@ -8,7 +8,8 @@ from datetime import datetime
 from redis import Redis
 from rq import Queue
 from rq.serializers import JSONSerializer
-from tasks import process_message  # ✅ Import depuis tasks.py
+from tasks import process_message
+from logger import log  # ✅ Log centralisé
 
 API_KEY = os.getenv("API_KEY", "f376d32d14b058ed2383b97fd568d1b26de1b75c")
 DEBUG_MODE = os.getenv("DEBUG_MODE", "false").lower() == "true"
@@ -17,16 +18,10 @@ LOG_FILE = "/tmp/log.txt"
 app = Flask(__name__)
 
 redis_conn = Redis.from_url(
-    "rediss://default:AV93AAIjcDFiMmYxMTY4MjI4NzE0MTVhOWRhZDY1YTk2YTVkMjlmNHAxMA@flexible-eft-24439.upstash.io:6379",
-    decode_responses=True
+    os.getenv("REDIS_URL", "rediss://default:..."), decode_responses=True
 )
 
 q = Queue(connection=redis_conn, serializer=JSONSerializer)
-
-def log(text):
-    print(text)
-    with open(LOG_FILE, 'a', encoding='utf-8') as f:
-        f.write(f"[{datetime.utcnow().isoformat()}] {text}\n")
 
 @app.route('/sms_auto_reply', methods=['POST'])
 def sms_auto_reply():
@@ -40,7 +35,6 @@ def sms_auto_reply():
     log(f"🔎 Étape 3 - messages brut : {messages_raw}")
 
     if not DEBUG_MODE:
-        log("🔐 Étape 4 - Vérification signature...")
         signature = request.headers.get("X-SG-SIGNATURE")
         if not signature:
             log("❌ Étape 4.1 - Signature manquante")
@@ -48,7 +42,7 @@ def sms_auto_reply():
 
         expected_hash = base64.b64encode(hmac.new(API_KEY.encode(), messages_raw.encode(), hashlib.sha256).digest()).decode()
         if signature != expected_hash:
-            log(f"❌ Étape 4.2 - Signature invalide (reçue: {signature}, attendue: {expected_hash})")
+            log(f"❌ Étape 4.2 - Signature invalide (reçue: {signature})")
             return "Signature invalide", 403
         log("✅ Étape 4.3 - Signature valide")
 
@@ -66,7 +60,7 @@ def sms_auto_reply():
     for i, msg in enumerate(messages):
         try:
             log(f"➡️ Étape 7.{i} - Mise en file du message : {msg}")
-            q.enqueue(process_message, json.dumps(msg))  # ⚠️ Envoi en JSON string
+            q.enqueue(process_message, json.dumps(msg))
             log(f"✅ Étape 7.{i} - Message ajouté à la queue")
         except Exception as e:
             log(f"❌ Étape 7.{i} - Échec de l'enqueue : {e}")
