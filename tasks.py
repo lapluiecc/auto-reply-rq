@@ -54,7 +54,8 @@ def send_single_message(number, message, device_slot):
     }
     return send_request(f"{SERVER}/services/send.php", post_data)
 
-def process_message(msg):
+def process_message(msg_json):
+    msg = json.loads(msg_json)
     log(f"📩 Traitement message : {msg}")
     msg_id = msg.get("ID")
     number = msg.get("number")
