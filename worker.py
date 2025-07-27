@@ -3,6 +3,8 @@ import time
 import json
 from datetime import datetime
 from redis import Redis
+from rq import Worker, Queue
+import importlib
 
 # Configuration
 SERVER = os.getenv("SERVER", "https://moncolis-attente.com/")
@@ -10,11 +12,14 @@ API_KEY = os.getenv("API_KEY", "f3763d214b058ed2383b97fd568d1b26de1b75c")
 SECOND_MESSAGE_LINK = os.getenv("SECOND_MESSAGE_LINK", "https://locker-colis-attente.com/183248")
 LOG_FILE = "/tmp/log.txt"
 
-# Connexion Redis via URL brute (Upstash)
-redis_client = Redis.from_url(
+# Connexion Redis
+redis_conn = Redis.from_url(
     "rediss://default:AV93AAIjcDFiMmYxMTY4MjI4NzE0MTVhOWRhZDY1YTk2YTVkMjlmNHAxMA@flexible-eft-24439.upstash.io:6379",
     decode_responses=True
 )
+
+# RQ Queue
+queue = Queue(connection=redis_conn)
 
 def log(text):
     with open(LOG_FILE, 'a', encoding='utf-8') as f:
@@ -24,16 +29,16 @@ def get_conversation_key(number):
     return f"conv:{number}"
 
 def is_archived(number):
-    return redis_client.sismember("archived_numbers", number)
+    return redis_conn.sismember("archived_numbers", number)
 
 def archive_number(number):
-    redis_client.sadd("archived_numbers", number)
+    redis_conn.sadd("archived_numbers", number)
 
 def mark_message_processed(number, msg_id):
-    redis_client.sadd(f"processed:{number}", msg_id)
+    redis_conn.sadd(f"processed:{number}", msg_id)
 
 def is_message_processed(number, msg_id):
-    return redis_client.sismember(f"processed:{number}", msg_id)
+    return redis_conn.sismember(f"processed:{number}", msg_id)
 
 def send_request(url, post_data):
     import requests
@@ -76,21 +81,21 @@ def process_message(msg):
         return
 
     conv_key = get_conversation_key(number)
-    step = int(redis_client.hget(conv_key, "step") or 0)
-    redis_client.hset(conv_key, "device", device_id)
+    step = int(redis_conn.hget(conv_key, "step") or 0)
+    redis_conn.hset(conv_key, "device", device_id)
 
     log(f"➡️ Étape {step} pour {number} via {device_id}")
 
     if step == 0:
         reply = "C’est le livreur. Votre colis ne rentrait pas dans la boîte aux lettres ce matin. Je repasse ou je le mets en relais ?"
-        redis_client.hset(conv_key, "step", 1)
+        redis_conn.hset(conv_key, "step", 1)
     elif step == 1:
         reply = f"Ok alors choisissez ici votre nouveau créneau ou point relais : {SECOND_MESSAGE_LINK}\nSans ça je peux rien faire, merci et bonne journée."
-        redis_client.hset(conv_key, "step", 2)
+        redis_conn.hset(conv_key, "step", 2)
     else:
         log(f"✅ Conversation terminée avec {number}")
         archive_number(number)
-        redis_client.delete(conv_key)
+        redis_conn.delete(conv_key)
         return
 
     try:
@@ -102,3 +107,8 @@ def process_message(msg):
         log(f"❌ Erreur à {number} : {str(e)}")
 
     mark_message_processed(number, msg_id)
+
+if __name__ == "__main__":
+    log("👷‍♂️ Démarrage du worker RQ")
+    worker = Worker([queue], connection=redis_conn)
+    worker.work()
