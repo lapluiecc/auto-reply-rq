@@ -66,7 +66,7 @@ def sms_auto_reply():
     for i, msg in enumerate(messages):
         try:
             log(f"➡️ Étape 7.{i} - Mise en file du message : {msg}")
-            q.enqueue(process_message, json.dumps(msg))
+            q.enqueue(process_message, json.dumps(msg))  # ⚠️ Envoi en JSON string
             log(f"✅ Étape 7.{i} - Message ajouté à la queue")
         except Exception as e:
             log(f"❌ Étape 7.{i} - Échec de l'enqueue : {e}")
