@@ -7,7 +7,7 @@ from flask import Flask, request, Response
 from datetime import datetime
 from redis import Redis
 from rq import Queue
-from worker_logic import process_message
+from worker import process_message
 
 API_KEY = os.getenv("API_KEY", "f376d32d14b058ed2383b97fd568d1b26de1b75c")
 DEBUG_MODE = os.getenv("DEBUG_MODE", "false").lower() == "true"
