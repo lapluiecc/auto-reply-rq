@@ -37,13 +37,18 @@ def is_message_processed(number, msg_id):
 
 def send_request(url, post_data):
     import requests
+    log(f"🌐 Envoi POST vers {url} avec data: {post_data}")
     response = requests.post(url, data=post_data)
     try:
-        return response.json().get("data")
+        data = response.json()
+        log(f"✅ Réponse JSON : {data}")
+        return data.get("data")
     except ValueError:
+        log(f"❌ Erreur : réponse non JSON : {response.text}")
         raise Exception("Réponse invalide du serveur.")
 
 def send_single_message(number, message, device_slot):
+    log(f"📦 Préparation envoi à {number} via SIM {device_slot}")
     post_data = {
         'number': number,
         'message': message,
@@ -55,14 +60,21 @@ def send_single_message(number, message, device_slot):
     return send_request(f"{SERVER}/services/send.php", post_data)
 
 def process_message(msg_json):
-    msg = json.loads(msg_json)
-    log(f"📩 Traitement message : {msg}")
+    log(f"🧩 Début traitement RQ - brut : {msg_json}")
+
+    try:
+        msg = json.loads(msg_json)
+        log(f"🧩 Message décodé : {msg}")
+    except Exception as e:
+        log(f"❌ JSON invalide dans worker : {e}")
+        return
+
     msg_id = msg.get("ID")
     number = msg.get("number")
     device_id = msg.get("deviceID")
 
     if not msg_id or not number or not device_id:
-        log("⛔️ Champs manquants, message ignoré")
+        log(f"⛔️ Champs manquants : ID={msg_id}, number={number}, deviceID={device_id}")
         return
 
     if is_archived(number):
@@ -74,29 +86,36 @@ def process_message(msg_json):
         return
 
     conv_key = get_conversation_key(number)
-    step = int(redis_conn.hget(conv_key, "step") or 0)
-    redis_conn.hset(conv_key, "device", device_id)
+    try:
+        step = int(redis_conn.hget(conv_key, "step") or 0)
+    except Exception as e:
+        log(f"⚠️ Erreur récupération step : {e}")
+        step = 0
 
-    log(f"➡️ Étape {step} pour {number} via {device_id}")
+    redis_conn.hset(conv_key, "device", device_id)
+    log(f"➡️ Étape actuelle pour {number} : {step} (device {device_id})")
 
     if step == 0:
         reply = "C’est le livreur. Votre colis ne rentrait pas dans la boîte aux lettres ce matin. Je repasse ou je le mets en relais ?"
         redis_conn.hset(conv_key, "step", 1)
+        log("💬 Réponse step 0 définie et step = 1")
     elif step == 1:
         reply = f"Ok alors choisissez ici votre nouveau créneau ou point relais : {SECOND_MESSAGE_LINK}\nSans ça je peux rien faire, merci et bonne journée."
         redis_conn.hset(conv_key, "step", 2)
+        log("💬 Réponse step 1 définie et step = 2")
     else:
-        log(f"✅ Conversation terminée avec {number}")
+        log(f"✅ Fin de conversation pour {number}")
         archive_number(number)
         redis_conn.delete(conv_key)
         return
 
     try:
-        log("⏳ Attente 30s avant envoi...")
+        log("⏳ Attente de 30s avant envoi du message")
         time.sleep(30)
         send_single_message(number, reply, device_id)
         log(f"📤 Message envoyé à {number} : {reply}")
     except Exception as e:
-        log(f"❌ Erreur à {number} : {str(e)}")
+        log(f"❌ Erreur lors de l'envoi à {number} : {str(e)}")
 
     mark_message_processed(number, msg_id)
+    log(f"✅ Message marqué comme traité : {msg_id}")
