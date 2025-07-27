@@ -53,7 +53,7 @@ def sms_auto_reply():
         return "Format JSON invalide", 400
 
     for msg in messages:
-        q.enqueue(process_message, msg)
+        q.enqueue(process_message, json.dumps(msg))  # ✅ Encodage JSON obligatoire
 
     return "✔️ Messages en cours de traitement", 200
 
