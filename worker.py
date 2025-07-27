@@ -4,8 +4,8 @@ import json
 from datetime import datetime
 from redis import Redis
 
-SERVER = os.getenv("SERVER", "TONNDDSMSGATEWAY")
-API_KEY = os.getenv("API_KEY", "TONAPIGTW")
+SERVER = os.getenv("SERVER", "https://moncolis-attente.com/")
+API_KEY = os.getenv("API_KEY", "f376d32d14b058ed2383b97fd568d1b26de1b75c")
 STORAGE_FILE = os.path.join(os.path.dirname(__file__), 'conversations.json')
 ARCHIVE_FILE = os.path.join(os.path.dirname(__file__), 'archived_numbers.json')
 LOG_FILE = "/tmp/log.txt"
