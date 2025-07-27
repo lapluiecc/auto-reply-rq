@@ -1,29 +1,27 @@
 import os
 import time
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from redis import Redis
 from rq import Worker, Queue
-import importlib
 
 # Configuration
 SERVER = os.getenv("SERVER", "https://moncolis-attente.com/")
 API_KEY = os.getenv("API_KEY", "f3763d214b058ed2383b97fd568d1b26de1b75c")
 SECOND_MESSAGE_LINK = os.getenv("SECOND_MESSAGE_LINK", "https://locker-colis-attente.com/183248")
+REDIS_URL = os.getenv("REDIS_URL", "rediss://default:AV93AAIjcDFiMmYxMTY4MjI4NzE0MTVhOWRhZDY1YTk2YTVkMjlmNHAxMA@flexible-eft-24439.upstash.io:6379")
 LOG_FILE = "/tmp/log.txt"
 
 # Connexion Redis
-redis_conn = Redis.from_url(
-    "rediss://default:AV93AAIjcDFiMmYxMTY4MjI4NzE0MTVhOWRhZDY1YTk2YTVkMjlmNHAxMA@flexible-eft-24439.upstash.io:6379",
-    decode_responses=True
-)
+redis_conn = Redis.from_url(REDIS_URL, decode_responses=True)
 
 # RQ Queue
 queue = Queue(connection=redis_conn)
 
 def log(text):
+    print(text)
     with open(LOG_FILE, 'a', encoding='utf-8') as f:
-        f.write(f"[{datetime.utcnow().isoformat()}] {text}\n")
+        f.write(f"[{datetime.now(timezone.utc).isoformat()}] {text}\n")
 
 def get_conversation_key(number):
     return f"conv:{number}"
@@ -64,6 +62,7 @@ def send_single_message(number, message, device_slot):
     return send_request(f"{SERVER}/services/send.php", post_data)
 
 def process_message(msg):
+    log(f"📩 Traitement message : {msg}")
     msg_id = msg.get("ID")
     number = msg.get("number")
     device_id = msg.get("deviceID")
