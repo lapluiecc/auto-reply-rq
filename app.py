@@ -10,7 +10,9 @@ from rq import Queue
 from worker import process_message
 
 API_KEY = os.getenv("API_KEY", "f376d32d14b058ed2383b97fd568d1b26de1b75c")
-DEBUG_MODE = os.getenv("DEBUG_MODE", "False") == "True"
+DEBUG_MODE = os.getenv("DEBUG_MODE", "false").lower() == "true"
+print(f"[INFO] DEBUG_MODE = {DEBUG_MODE}")  # Pour vérifier dans les logs
+
 LOG_FILE = "/tmp/log.txt"
 
 app = Flask(__name__)
