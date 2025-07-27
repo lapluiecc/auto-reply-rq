@@ -7,6 +7,7 @@ from flask import Flask, request, Response
 from datetime import datetime
 from redis import Redis
 from rq import Queue
+from rq.serializers import JSONSerializer  # ✅ Ajout du serializer
 from worker import process_message
 
 API_KEY = os.getenv("API_KEY", "f376d32d14b058ed2383b97fd568d1b26de1b75c")
@@ -23,7 +24,8 @@ redis_conn = Redis.from_url(
     decode_responses=True
 )
 
-q = Queue(connection=redis_conn)
+# ✅ Queue avec JSONSerializer pour être cohérent avec le worker
+q = Queue(connection=redis_conn, serializer=JSONSerializer)
 
 def log(text):
     with open(LOG_FILE, 'a', encoding='utf-8') as f:
