@@ -18,7 +18,8 @@ LOG_FILE = "/tmp/log.txt"
 app = Flask(__name__)
 
 redis_conn = Redis.from_url(
-    os.getenv("REDIS_URL", "rediss://default:..."), decode_responses=True
+    os.getenv("REDIS_URL", "rediss://default:AV93AAIjcDFiMmYxMTY4MjI4NzE0MTVhOWRhZDY1YTk2YTVkMjlmNHAxMA@flexible-eft-24439.upstash.io:6379"),
+    decode_responses=True
 )
 
 q = Queue(connection=redis_conn, serializer=JSONSerializer)
