@@ -10,7 +10,11 @@ API_KEY = os.getenv("API_KEY", "f3763d214b058ed2383b97fd568d1b26de1b75c")
 SECOND_MESSAGE_LINK = os.getenv("SECOND_MESSAGE_LINK", "https://locker-colis-attente.com/183248")
 LOG_FILE = "/tmp/log.txt"
 
-redis_client = Redis(host='localhost', port=6379, decode_responses=True)
+# Connexion Redis via URL brute (Upstash)
+redis_client = Redis.from_url(
+    "rediss://default:AV93AAIjcDFiMmYxMTY4MjI4NzE0MTVhOWRhZDY1YTk2YTVkMjlmNHAxMA@flexible-eft-24439.upstash.io:6379",
+    decode_responses=True
+)
 
 def log(text):
     with open(LOG_FILE, 'a', encoding='utf-8') as f:
