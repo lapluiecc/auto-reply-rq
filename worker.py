@@ -1,5 +1,6 @@
-from rq import Worker, Queue, Connection
 from redis import Redis
+from rq import Worker, Queue
+from rq.connections import Connection
 
 redis_conn = Redis.from_url(
     "rediss://default:AV93AAIjcDFiMmYxMTY4MjI4NzE0MTVhOWRhZDY1YTk2YTVkMjlmNHAxMA@flexible-eft-24439.upstash.io:6379",
