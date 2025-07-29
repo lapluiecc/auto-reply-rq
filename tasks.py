@@ -11,7 +11,7 @@ SECOND_MESSAGE_LINK = os.getenv("SECOND_MESSAGE_LINK")
 
 # Connexion Redis via URL sécurisée
 REDIS_URL = os.getenv("REDIS_URL")
-redis_conn = Redis.from_url(REDIS_URL, decode_responses=True)
+redis_conn = Redis.from_url(REDIS_URL, decode_responses=True, ssl=True)
 
 def get_conversation_key(number):
     return f"conv:{number}"
