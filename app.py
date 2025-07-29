@@ -18,9 +18,14 @@ app = Flask(__name__)
 
 # ✅ Connexion Redis sécurisée automatique si rediss://
 REDIS_URL = os.getenv("REDIS_URL")
-redis_conn = Redis.from_url(REDIS_URL, decode_responses=True)
+redis_conn = Redis.from_url(
+    REDIS_URL,
+    decode_responses=True,
+    ssl=True if REDIS_URL and REDIS_URL.startswith("rediss://") else False
+)
 
-q = Queue(connection=redis_conn, serializer=JSONSerializer)
+# ✅ File "default" bien déclarée
+q = Queue("default", connection=redis_conn, serializer=JSONSerializer)
 
 @app.route('/sms_auto_reply', methods=['POST'])
 def sms_auto_reply():
