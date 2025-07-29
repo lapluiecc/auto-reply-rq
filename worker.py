@@ -2,16 +2,14 @@ import os
 from redis import Redis
 from rq import Worker, Queue
 from rq.serializers import JSONSerializer
-import tasks  # 🔥 OBLIGATOIRE : importe le fichier qui contient process_message
+import tasks  # 👈 Obligatoire pour que process_message soit connu
 from logger import log
 
+# ✅ Connexion Redis sans paramètre ssl (géré automatiquement)
 REDIS_URL = os.getenv("REDIS_URL")
-redis_conn = Redis.from_url(
-    REDIS_URL,
-    decode_responses=True,
-    ssl=True if REDIS_URL.startswith("rediss://") else False
-)
+redis_conn = Redis.from_url(REDIS_URL, decode_responses=True)
 
+# ✅ Queue "default"
 queue = Queue("default", connection=redis_conn, serializer=JSONSerializer)
 
 if __name__ == "__main__":
