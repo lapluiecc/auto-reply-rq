@@ -9,12 +9,11 @@ SERVER = os.getenv("SERVER")
 API_KEY = os.getenv("API_KEY")
 SECOND_MESSAGE_LINK = os.getenv("SECOND_MESSAGE_LINK")
 
-# ✅ Connexion Redis dynamique avec SSL auto
+# ✅ Connexion Redis dynamique et compatible (sans ssl explicite)
 REDIS_URL = os.getenv("REDIS_URL")
 redis_conn = Redis.from_url(
     REDIS_URL,
-    decode_responses=True,
-    ssl=True if REDIS_URL and REDIS_URL.startswith("rediss://") else False
+    decode_responses=True
 )
 
 def get_conversation_key(number):
