@@ -64,7 +64,7 @@ def process_message(msg_json):
     msg_id = msg.get("ID")
     device_id = msg.get("deviceID")
 
-    msg_id_short = str(msg_id)[-5:]  # Pour suivi simplifié
+    msg_id_short = str(msg_id)[-5:] if msg_id else "?????"
 
     if not number or not msg_id or not device_id:
         log(f"⛔️ [{msg_id_short}] Champs manquants : number={number}, ID={msg_id}, device={device_id}")
