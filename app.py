@@ -18,7 +18,7 @@ app = Flask(__name__)
 
 # 🔁 Connexion Redis avec URL dynamique
 REDIS_URL = os.getenv("REDIS_URL")
-redis_conn = Redis.from_url(REDIS_URL, decode_responses=True)
+redis_conn = Redis.from_url(REDIS_URL, decode_responses=True, ssl=True)
 
 q = Queue(connection=redis_conn, serializer=JSONSerializer)
 
