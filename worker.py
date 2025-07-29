@@ -3,8 +3,11 @@ from redis import Redis
 from rq import Queue
 from rq.serializers import JSONSerializer
 from rq.worker import Worker
-from tasks import process_message  # ✅ Import direct
 from logger import log
+
+# ✅ Log de test immédiat pour vérifier que tasks.py est bien importé
+from tasks import process_message
+log("📦 Chargement de tasks.py OK")  # <-- Ajout ici
 
 # ❗️ Correction : ne pas mettre decode_responses=True pour éviter crash RQ
 REDIS_URL = os.getenv("REDIS_URL")
