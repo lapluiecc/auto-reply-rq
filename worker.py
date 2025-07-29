@@ -10,7 +10,7 @@ REDIS_URL = os.getenv("REDIS_URL")
 redis_conn = Redis.from_url(
     REDIS_URL,
     decode_responses=True,
-    ssl=True if REDIS_URL and REDIS_URL.startswith("rediss://") else False
+    ssl=REDIS_URL.startswith("rediss://") if REDIS_URL else False
 )
 
 # ✅ File nommée "default" comme dans app.py
