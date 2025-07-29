@@ -5,33 +5,42 @@ from rq.serializers import JSONSerializer
 from rq.worker import Worker
 from logger import log
 
-# ✅ Log de test immédiat pour vérifier que tasks.py est bien importé
-from tasks import process_message
-log("📦 Chargement de tasks.py OK")  # <-- Ajout ici
+# ✅ Test d'import de tasks.py
+try:
+    from tasks import process_message
+    log("📦 Import de process_message depuis tasks.py : OK")
+except Exception as e:
+    log(f"❌ Échec d'import de tasks.py : {e}")
 
-# ❗️ Correction : ne pas mettre decode_responses=True pour éviter crash RQ
+# ❗️ Connexion Redis (sans decode_responses ici)
 REDIS_URL = os.getenv("REDIS_URL")
 redis_conn = Redis.from_url(REDIS_URL)
 
-# ✅ Queue "default" avec JSON
+# ✅ Queue "default" avec sérialisation JSON
 queue = Queue("default", connection=redis_conn, serializer=JSONSerializer)
 
-# ✅ Worker avec log détaillé
+# ✅ Worker personnalisé avec logs précis
 class LoggingWorker(Worker):
     def execute_job(self, job, queue):
-        log(f"⚙️ Traitement du job : {job.description}")
+        log(f"⚙️ Début traitement du job : {job.id}")
+        log(f"📄 Description : {job.description}")
         try:
-            return super().execute_job(job, queue)
+            result = super().execute_job(job, queue)
+            log(f"✅ Job {job.id} terminé avec succès")
+            return result
         except Exception as e:
-            log(f"💥 Crash pendant le job : {e}")
+            log(f"💥 Job {job.id} échoué : {e}")
             raise
 
 if __name__ == "__main__":
-    log("👷 Worker lancé")
-    worker = LoggingWorker(
-        [queue],
-        connection=redis_conn,
-        serializer=JSONSerializer,
-        log_job_description=True
-    )
-    worker.work()
+    try:
+        log("👷 Worker lancé, écoute de la file 'default' en cours...")
+        worker = LoggingWorker(
+            [queue],
+            connection=redis_conn,
+            serializer=JSONSerializer,
+            log_job_description=True
+        )
+        worker.work(burst=False)  # burst=False = continue à écouter indéfiniment
+    except Exception as e:
+        log(f"🚨 Erreur critique au lancement du worker : {e}")
