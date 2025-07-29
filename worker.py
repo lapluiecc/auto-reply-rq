@@ -6,18 +6,18 @@ from rq.worker import Worker
 from tasks import process_message  # ✅ Import direct
 from logger import log
 
-# ✅ Connexion Redis automatique (rediss:// ou redis://)
 REDIS_URL = os.getenv("REDIS_URL")
 redis_conn = Redis.from_url(REDIS_URL, decode_responses=True)
-
-# ✅ Queue nommée "default"
 queue = Queue("default", connection=redis_conn, serializer=JSONSerializer)
 
-# ✅ Classe personnalisée pour loguer les traitements
 class LoggingWorker(Worker):
     def execute_job(self, job, queue):
         log(f"⚙️ Traitement du job : {job.description}")
-        return super().execute_job(job, queue)
+        try:
+            return super().execute_job(job, queue)
+        except Exception as e:
+            log(f"💥 Crash pendant le job : {e}")
+            raise
 
 if __name__ == "__main__":
     log("👷 Worker lancé")
