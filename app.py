@@ -16,9 +16,13 @@ LOG_FILE = "/tmp/log.txt"
 
 app = Flask(__name__)
 
-# 🔁 Connexion Redis avec URL dynamique
+# ✅ Connexion Redis sécurisée avec URL dynamique
 REDIS_URL = os.getenv("REDIS_URL")
-redis_conn = Redis.from_url(REDIS_URL, decode_responses=True, ssl=True)
+redis_conn = Redis.from_url(
+    REDIS_URL,
+    decode_responses=True,
+    ssl=True if REDIS_URL and REDIS_URL.startswith("rediss://") else False
+)
 
 q = Queue(connection=redis_conn, serializer=JSONSerializer)
 
@@ -39,7 +43,10 @@ def sms_auto_reply():
             log("❌ Signature manquante")
             return "Signature requise", 403
 
-        expected_hash = base64.b64encode(hmac.new(API_KEY.encode(), messages_raw.encode(), hashlib.sha256).digest()).decode()
+        expected_hash = base64.b64encode(
+            hmac.new(API_KEY.encode(), messages_raw.encode(), hashlib.sha256).digest()
+        ).decode()
+
         if signature != expected_hash:
             log(f"❌ Signature invalide (reçue: {signature})")
             return "Signature invalide", 403
