@@ -1,20 +1,27 @@
 import os
 from redis import Redis
-from rq import Worker, Queue
+from rq import Queue
 from rq.serializers import JSONSerializer
-import tasks  # 👈 Obligatoire pour que process_message soit connu
+from rq.worker import Worker
+from tasks import process_message  # ✅ Import direct
 from logger import log
 
-# ✅ Connexion Redis sans paramètre ssl (géré automatiquement)
+# ✅ Connexion Redis automatique (rediss:// ou redis://)
 REDIS_URL = os.getenv("REDIS_URL")
 redis_conn = Redis.from_url(REDIS_URL, decode_responses=True)
 
-# ✅ Queue "default"
+# ✅ Queue nommée "default"
 queue = Queue("default", connection=redis_conn, serializer=JSONSerializer)
+
+# ✅ Classe personnalisée pour loguer les traitements
+class LoggingWorker(Worker):
+    def execute_job(self, job, queue):
+        log(f"⚙️ Traitement du job : {job.description}")
+        return super().execute_job(job, queue)
 
 if __name__ == "__main__":
     log("👷 Worker lancé")
-    worker = Worker(
+    worker = LoggingWorker(
         [queue],
         connection=redis_conn,
         serializer=JSONSerializer,
