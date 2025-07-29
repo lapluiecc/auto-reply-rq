@@ -16,18 +16,18 @@ LOG_FILE = "/tmp/log.txt"
 
 app = Flask(__name__)
 
-# ✅ Connexion Redis (automatique selon rediss:// ou redis://)
+# ✅ Connexion Redis automatique (rediss:// ou redis://)
 REDIS_URL = os.getenv("REDIS_URL")
 redis_conn = Redis.from_url(REDIS_URL, decode_responses=True)
 
-# ✅ File "default" bien déclarée
-q = Queue("default", connection=redis_conn, serializer=JSONSerializer)
+# ✅ File nommée "default"
+queue = Queue("default", connection=redis_conn, serializer=JSONSerializer)
 
 @app.route('/sms_auto_reply', methods=['POST'])
 def sms_auto_reply():
     log("\n📩 Requête POST reçue")
-    messages_raw = request.form.get("messages")
 
+    messages_raw = request.form.get("messages")
     if not messages_raw:
         log("❌ Champ 'messages' manquant")
         return "messages manquants", 400
@@ -62,8 +62,8 @@ def sms_auto_reply():
 
     for i, msg in enumerate(messages):
         try:
-            log(f"➡️ Mise en file {i} : {msg}")
-            q.enqueue(process_message, json.dumps(msg))
+            job = queue.enqueue(process_message, json.dumps(msg))
+            log(f"➡️ Mise en file {i} : {msg} ✅ job.id: {job.id}")
         except Exception as e:
             log(f"❌ Erreur file {i} : {e}")
 
