@@ -50,9 +50,10 @@ def send_single_message(number, message, device_slot):
     })
 
 def process_message(msg_json):
-    log(f"\n🧩 Traitement : {msg_json}")
+    log(f"\n📥 Nouveau job reçu : {msg_json}")
     try:
         msg = json.loads(msg_json)
+        log(f"🧩 Traitement du message : {msg}")
     except Exception as e:
         log(f"❌ JSON invalide : {e}")
         return
@@ -83,9 +84,9 @@ def process_message(msg_json):
         else:
             archive_number(number)
             redis_conn.delete(conv_key)
+            log(f"📦 Conversation terminée avec {number}")
             return
 
-        time.sleep(30)
         send_single_message(number, reply, device_id)
         mark_message_processed(number, msg_id)
         log(f"✅ Réponse envoyée à {number} : {reply}")
