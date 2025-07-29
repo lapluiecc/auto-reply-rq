@@ -50,15 +50,13 @@ def send_single_message(number, message, device_slot):
     })
 
 def process_message(msg_json):
-    log(f"\n🧩 [Début process_message] - Type reçu : {type(msg_json)}")
-    log(f"🧩 Contenu brut : {msg_json}")
-
+    log("🛠️ Début EXÉCUTION process_message (log de test immédiat)")  # 🔍 Ajout 1
+    log(f"\n📥 Nouveau job reçu : {msg_json}")
     try:
-        log("🔍 Tentative de parsing JSON...")
         msg = json.loads(msg_json)
         log(f"🧩 Traitement du message : {msg}")
     except Exception as e:
-        log(f"💥 Erreur au tout début du process_message : {e}")
+        log(f"❌ JSON invalide : {e}")
         return
 
     number = msg.get("number")
@@ -70,12 +68,8 @@ def process_message(msg_json):
         return
 
     try:
-        if is_archived(number):
-            log(f"🔁 Ignoré (déjà archivé) {msg_id} - {number}")
-            return
-
-        if is_message_processed(number, msg_id):
-            log(f"🔁 Ignoré (déjà traité) {msg_id} - {number}")
+        if is_archived(number) or is_message_processed(number, msg_id):
+            log(f"🔁 Ignoré {msg_id} - {number}")
             return
 
         conv_key = get_conversation_key(number)
@@ -97,6 +91,7 @@ def process_message(msg_json):
         send_single_message(number, reply, device_id)
         mark_message_processed(number, msg_id)
         log(f"✅ Réponse envoyée à {number} : {reply}")
+        log("🎯 FIN process_message atteinte")  # 🔍 Ajout 2
 
     except Exception as e:
         log(f"❌ Erreur traitement Redis ou envoi : {e}")
