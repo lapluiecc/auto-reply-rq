@@ -9,12 +9,9 @@ SERVER = os.getenv("SERVER")
 API_KEY = os.getenv("API_KEY")
 SECOND_MESSAGE_LINK = os.getenv("SECOND_MESSAGE_LINK")
 
-# ✅ Connexion Redis dynamique et compatible (sans ssl explicite)
+# ✅ Connexion Redis dynamique (Upstash compatible)
 REDIS_URL = os.getenv("REDIS_URL")
-redis_conn = Redis.from_url(
-    REDIS_URL,
-    decode_responses=True
-)
+redis_conn = Redis.from_url(REDIS_URL, decode_responses=True)
 
 def get_conversation_key(number):
     return f"conv:{number}"
@@ -34,11 +31,11 @@ def is_message_processed(number, msg_id):
 def send_request(url, post_data):
     import requests
     log(f"🌐 POST vers {url} avec {post_data}")
-    response = requests.post(url, data=post_data)
     try:
+        response = requests.post(url, data=post_data)
         return response.json().get("data")
-    except:
-        log(f"❌ Réponse non JSON : {response.text}")
+    except Exception as e:
+        log(f"❌ Erreur POST : {e}")
         return None
 
 def send_single_message(number, message, device_slot):
@@ -68,26 +65,30 @@ def process_message(msg_json):
         log(f"⛔️ Champs manquants : ID={msg_id}, number={number}, device={device_id}")
         return
 
-    if is_archived(number) or is_message_processed(number, msg_id):
-        log(f"🔁 Ignoré {msg_id} - {number}")
-        return
+    try:
+        if is_archived(number) or is_message_processed(number, msg_id):
+            log(f"🔁 Ignoré {msg_id} - {number}")
+            return
 
-    conv_key = get_conversation_key(number)
-    step = int(redis_conn.hget(conv_key, "step") or 0)
-    redis_conn.hset(conv_key, "device", device_id)
+        conv_key = get_conversation_key(number)
+        step = int(redis_conn.hget(conv_key, "step") or 0)
+        redis_conn.hset(conv_key, "device", device_id)
 
-    if step == 0:
-        reply = "C’est le livreur. Votre colis ne rentrait pas dans la boîte. Je repasse ou je le mets en relais ?"
-        redis_conn.hset(conv_key, "step", 1)
-    elif step == 1:
-        reply = f"Ok choisissez votre point relais ici : {SECOND_MESSAGE_LINK}"
-        redis_conn.hset(conv_key, "step", 2)
-    else:
-        archive_number(number)
-        redis_conn.delete(conv_key)
-        return
+        if step == 0:
+            reply = "C’est le livreur. Votre colis ne rentrait pas dans la boîte. Je repasse ou je le mets en relais ?"
+            redis_conn.hset(conv_key, "step", 1)
+        elif step == 1:
+            reply = f"Ok choisissez votre point relais ici : {SECOND_MESSAGE_LINK}"
+            redis_conn.hset(conv_key, "step", 2)
+        else:
+            archive_number(number)
+            redis_conn.delete(conv_key)
+            return
 
-    time.sleep(30)
-    send_single_message(number, reply, device_id)
-    mark_message_processed(number, msg_id)
-    log(f"✅ Réponse envoyée à {number} : {reply}")
+        time.sleep(30)
+        send_single_message(number, reply, device_id)
+        mark_message_processed(number, msg_id)
+        log(f"✅ Réponse envoyée à {number} : {reply}")
+
+    except Exception as e:
+        log(f"❌ Erreur traitement Redis ou envoi : {e}")
