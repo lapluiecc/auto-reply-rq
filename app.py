@@ -16,13 +16,9 @@ LOG_FILE = "/tmp/log.txt"
 
 app = Flask(__name__)
 
-# ✅ Connexion Redis sécurisée avec URL dynamique
+# ✅ Connexion Redis sécurisée automatique si rediss://
 REDIS_URL = os.getenv("REDIS_URL")
-redis_conn = Redis.from_url(
-    REDIS_URL,
-    decode_responses=True,
-    ssl=True if REDIS_URL and REDIS_URL.startswith("rediss://") else False
-)
+redis_conn = Redis.from_url(REDIS_URL, decode_responses=True)
 
 q = Queue(connection=redis_conn, serializer=JSONSerializer)
 
