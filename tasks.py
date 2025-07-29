@@ -50,7 +50,7 @@ def send_single_message(number, message, device_slot):
     })
 
 def process_message(msg_json):
-    log("🛠️ Début EXÉCUTION process_message (log de test immédiat)")  # 🔍 Ajout 1
+    log("🛠️ Début EXÉCUTION process_message")  # ✅ Log immédiat
     log(f"\n📥 Nouveau job reçu : {msg_json}")
     try:
         msg = json.loads(msg_json)
@@ -91,7 +91,7 @@ def process_message(msg_json):
         send_single_message(number, reply, device_id)
         mark_message_processed(number, msg_id)
         log(f"✅ Réponse envoyée à {number} : {reply}")
-        log("🎯 FIN process_message atteinte")  # 🔍 Ajout 2
+        log("🎯 FIN process_message atteinte")  # ✅ Fin visible dans logs
 
     except Exception as e:
         log(f"❌ Erreur traitement Redis ou envoi : {e}")
