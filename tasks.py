@@ -50,12 +50,15 @@ def send_single_message(number, message, device_slot):
     })
 
 def process_message(msg_json):
-    log(f"\n📥 Nouveau job reçu : {msg_json}")
+    log(f"\n🧩 [Début process_message] - Type reçu : {type(msg_json)}")
+    log(f"🧩 Contenu brut : {msg_json}")
+
     try:
+        log("🔍 Tentative de parsing JSON...")
         msg = json.loads(msg_json)
         log(f"🧩 Traitement du message : {msg}")
     except Exception as e:
-        log(f"❌ JSON invalide : {e}")
+        log(f"💥 Erreur au tout début du process_message : {e}")
         return
 
     number = msg.get("number")
@@ -67,8 +70,12 @@ def process_message(msg_json):
         return
 
     try:
-        if is_archived(number) or is_message_processed(number, msg_id):
-            log(f"🔁 Ignoré {msg_id} - {number}")
+        if is_archived(number):
+            log(f"🔁 Ignoré (déjà archivé) {msg_id} - {number}")
+            return
+
+        if is_message_processed(number, msg_id):
+            log(f"🔁 Ignoré (déjà traité) {msg_id} - {number}")
             return
 
         conv_key = get_conversation_key(number)
