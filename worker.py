@@ -6,10 +6,14 @@ from rq.worker import Worker
 from tasks import process_message  # ✅ Import direct
 from logger import log
 
+# ❗️ Correction : ne pas mettre decode_responses=True pour éviter crash RQ
 REDIS_URL = os.getenv("REDIS_URL")
-redis_conn = Redis.from_url(REDIS_URL, decode_responses=True)
+redis_conn = Redis.from_url(REDIS_URL)
+
+# ✅ Queue "default" avec JSON
 queue = Queue("default", connection=redis_conn, serializer=JSONSerializer)
 
+# ✅ Worker avec log détaillé
 class LoggingWorker(Worker):
     def execute_job(self, job, queue):
         log(f"⚙️ Traitement du job : {job.description}")
