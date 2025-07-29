@@ -15,7 +15,11 @@ DEBUG_MODE = os.getenv("DEBUG_MODE", "false").lower() == "true"
 LOG_FILE = "/tmp/log.txt"
 
 app = Flask(__name__)
-redis_conn = Redis(decode_responses=True)
+
+# 🔁 Connexion Redis avec URL dynamique
+REDIS_URL = os.getenv("REDIS_URL")
+redis_conn = Redis.from_url(REDIS_URL, decode_responses=True)
+
 q = Queue(connection=redis_conn, serializer=JSONSerializer)
 
 @app.route('/sms_auto_reply', methods=['POST'])
